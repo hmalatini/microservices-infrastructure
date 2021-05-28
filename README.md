@@ -12,7 +12,7 @@ The code behind this service is developed to be compliance with the DevOps Princ
 
 Also, it follows the GitOps philosophy, where the status of a specific system (an infrastructure resource, or a deployed artifact), is reflected by the last commit of a git repository.
 ### High Level Architecture
-![image](documentation/images/Arch High Level v2.png)
+![image](documentation/images/high-level-arch.png)
 ### Creation flow
 #### Creating microservice
 When you call this app to create a new microservice, it is going to create the following things:
