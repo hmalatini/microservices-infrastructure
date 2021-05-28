@@ -1,0 +1,168 @@
+{{- if .Values.networking.privateConfig }}
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ .Values.namespace }}-private-virtual-service
+spec:
+{{- if .Values.networking.privateConfig.endpoints }}
+  hosts:
+  - {{ include "app.name" $ }}.{{ $.Values.namespace }}
+  http:
+  {{- range .Values.networking.privateConfig.endpoints }}
+  - name: {{ .name }}
+    {{- if .match }}
+    match:
+    - name: {{ .name }}
+      {{- with .match }}
+      {{- if .uri }}
+      {{- with .uri }}
+      uri:
+        {{- if .type }}
+        {{ .type }}: {{ .value }}
+        {{- end }}
+      {{- end}}
+      {{- end }}
+      {{- if .method }}
+      {{- with .method }}
+      method:
+        {{- if .type }}
+          {{ .type }}: {{ .value }}
+          {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if .headers }}
+      headers:
+        {{- range $key, $val := .headers }}
+        {{ $key }}:
+          {{ $val.type }}: {{ $val.value }}
+        {{- end}}
+      {{- end }}
+      {{- if .noheaders }}
+      withoutHeaders:
+        {{- range $key, $val := .noheaders }}
+          {{ $key }}:
+            {{ $val.type }}: {{ $val.value }}
+         {{- end }}
+      {{- end }}
+      {{- if .queryParams }}
+      queryParams:
+        {{- range $key, $val := .queryParams }}
+          {{ $key }}:
+            {{ $val.type }}: {{ $val.value }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if .redirect }}
+    redirect:
+      uri: {{ .redirect }}
+    {{- end }}
+    {{- if .rewrite }}
+    rewrite:
+      uri: {{ .rewrite }}
+    {{- end }}
+    {{- if .timeout }}
+    timeout: {{ .timeout }}
+    {{- end }}
+    {{- if .retries }}
+    retries:
+      {{- with .retries }}
+      {{- if .attempts }}
+        attempts: {{ .attempts }}
+      {{- end }}
+      {{- if .perTryTimeout }}
+        perTryTimeout: {{ .perTryTimeout }}
+      {{- end }}
+      {{- if .retryOn }}
+        retryOn: {{ .retryOn }}
+      {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if .faults }}
+    fault:
+      {{- with .faults }}
+      {{- if .delay }}
+      delay:
+        {{- with .delay }}
+        {{- if .fixedDelay }}
+        fixedDelay: {{ .fixedDelay }}
+        {{- end }}
+        {{- if .percentage }}
+        percentage:
+          value: {{ .percentage }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if .abort }}
+      abort:
+        {{- with .abort }}
+        {{- if .httpStatus }}
+        httpStatus: {{ .httpStatus }}
+        {{- end }}
+        {{- if .percentage }}
+        percentage:
+          value: {{ .percentage }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if .headers }}
+    headers:
+      {{- with .headers }}
+      {{- if .request }}
+      request:
+        {{- with .request }}
+        {{- if .set }}
+        set:
+          {{- range .set }}
+          {{ .headerName }}: {{ .headerValue }}
+          {{- end }}
+        {{- end }}
+        {{- if .add }}
+        add:
+          {{- range .add }}
+          {{ .headerName }}: {{ .headerValue }}
+          {{- end }}
+        {{- end }}
+        {{- if .remove }}
+        remove:
+          {{- range .remove }}
+        - {{ .headerName }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if .response }}
+      response:
+        {{- with .response }}
+        {{- if .set }}
+        set:
+          {{- range .set }}
+          {{ .headerName }}: {{ .headerValue }}
+          {{- end }}
+        {{- end }}
+        {{- if .add }}
+        add:
+          {{- range .add }}
+          {{ .headerName }}: {{ .headerValue }}
+          {{- end }}
+        {{- end }}
+        {{- if .remove }}
+        remove:
+          {{- range .remove }}
+        - {{ .headerName }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    route:
+    - destination:
+        host: {{ $.Values.namespace }}-svc
+        subset: {{ .trafficPolicyName }}
+  {{- end}}
+{{- end }}
+{{- end }}
+---

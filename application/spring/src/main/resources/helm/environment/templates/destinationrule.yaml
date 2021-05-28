@@ -1,0 +1,70 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ .Values.namespace }}-destination-rule
+spec:
+  host: {{ .Values.namespace }}-svc
+  {{- if .Values.networking.trafficPolicies }}
+  subsets:
+    {{- range .Values.networking.trafficPolicies }}
+  - name: {{ .name }}
+    trafficPolicy:
+      {{- if .loadBalancer }}
+      loadBalancer:
+        {{- if ne .loadBalancer.type "CONSISTENT_HASH" }}
+        simple: {{ .loadBalancer.type }}
+        {{- else }}
+        consistentHash:
+          {{- if .loadBalancer.consistentHash.minimumRingSize }}
+          minimumRingSize: {{ .loadBalancer.consistentHash.minimumRingSize }}
+          {{- end }}
+          {{- if .loadBalancer.consistentHash.match.headerName }}
+          httpHeaderName: {{ .loadBalancer.consistentHash.match.headerName }}
+          {{- end }}
+          {{- if .loadBalancer.consistentHash.match.queryParameterName }}
+          httpQueryParameterName: {{ .loadBalancer.consistentHash.match.queryParameterName }}
+          {{- end }}
+          {{- if .loadBalancer.consistentHash.match.useSourceIp }}
+          useSourceIp: {{ .loadBalancer.consistentHash.match.useSourceIp }}
+          {{- end }}
+          {{- if or .loadBalancer.consistentHash.match.cookie.name .loadBalancer.consistentHash.match.cookie.path }}
+          httpCookie:
+            {{- if .loadBalancer.consistentHash.match.cookie.name }}
+            name: {{ .loadBalancer.consistentHash.match.cookie.name }}
+            {{- end }}
+            {{- if .loadBalancer.consistentHash.match.cookie.path }}
+            path: {{ .loadBalancer.consistentHash.match.cookie.path }}
+            {{- end }}
+            {{- if .loadBalancer.consistentHash.match.cookie.ttl }}
+            ttl: {{ .loadBalancer.consistentHash.match.cookie.ttl }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if .circuitBreaker }}
+      outlierDetection:
+        {{- if .circuitBreaker.consecutiveGatewayErrors }}
+        consecutiveGatewayErrors: {{ .circuitBreaker.consecutiveGatewayErrors }}
+        {{- end }}
+        {{- if .circuitBreaker.consecutive5xxErrors }}
+        consecutive5xxErrors: {{ .circuitBreaker.consecutive5xxErrors }}
+        {{- end }}
+        {{- if .circuitBreaker.interval }}
+        interval: {{ .circuitBreaker.interval }}
+        {{- end }}
+        {{- if .circuitBreaker.baseEjectionTime }}
+        baseEjectionTime: {{ .circuitBreaker.baseEjectionTime }}
+        {{- end }}
+        {{- if .circuitBreaker.maxEjectionPercent }}
+        maxEjectionPercent: {{ .circuitBreaker.maxEjectionPercent }}
+        {{- end }}
+        {{- if .circuitBreaker.minHealthPercent }}
+        minHealthPercent: {{ .circuitBreaker.minHealthPercent }}
+        {{- end }}
+      {{- end }}
+    labels:
+      app: {{ $.Values.namespace }}
+      version: {{ $.Values.image.tag }}
+    {{- end}}
+  {{- end }}
+---

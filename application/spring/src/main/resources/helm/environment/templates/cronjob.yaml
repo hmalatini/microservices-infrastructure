@@ -1,0 +1,41 @@
+{{- range $job, $jobValues := .Values.cronjobs }}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ $.Values.namespace }}-{{ $job }}
+  labels:
+    {{- include "app.labels" $ | nindent 4 }}
+spec:
+  schedule: "{{ $jobValues.schedule }}"
+  concurrencyPolicy: Forbid # FOR EXECUTE ONLY 1 WHEN FAILS
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0 # FOR EXECUTE ONLY 1 WHEN FAILS
+      template:
+        spec:
+          containers:
+            - name: {{ $.Values.namespace }}-{{ $job }}
+              image: curlimages/curl:7.76.1
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  trap "curl --max-time 2 -s -f -XPOST http://127.0.0.1:15000/quitquitquit" EXIT
+                  while ! curl -s -f http://127.0.0.1:15020/healthz/ready; do sleep 1; done
+                  date; echo Starting Job
+                  echo
+                  HTTP_CODE=$(curl --write-out "%{http_code}" http://{{ $.Values.namespace }}-svc{{ $jobValues.endpoint }} --output response --silent)
+                  echo
+                  echo Status code: ${HTTP_CODE}
+                  if [ ${HTTP_CODE} -lt 200 ] || [ ${HTTP_CODE} -gt 299 ]
+                  then
+                    echo Failed request
+                    echo Terminating Job
+                    exit 1
+                  fi
+                  date; echo Finishing Job
+          restartPolicy: Never # FOR EXECUTE ONLY 1 WHEN FAILS
+---
+{{- end }}

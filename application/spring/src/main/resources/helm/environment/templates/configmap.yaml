@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.namespace }}-config-map
+data:
+  ENVIRONMENT: {{ .Values.environment }}
+  SERVICE_NAME: {{ include "app.name" . }}
+  {{- range $key, $val := .Values.configValues }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}

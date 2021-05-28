@@ -1,0 +1,14 @@
+package com.infra.resources.adapter.gateway.terraformcloud.dto;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Builder
+public class DataVariableCreationDto {
+    private String type;
+    private AttributesVariableCreationDto attributes;
+    private RelationshipsVariableCreationDto relationships;
+}

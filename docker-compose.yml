@@ -1,0 +1,76 @@
+version: '3.7'
+
+services:
+
+  microservices-infra:
+    image: microservices-infra:latest
+    build:
+      context: ./
+    container_name: microservices-infra
+    restart: on-failure
+    environment:
+      ENVIRONMENT: dev
+      SERVICE_NAME: infra-manager
+      JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'
+      microservicesdb.host: microservices-db
+      microservicesdb.port: 3306
+      microservicesdb.db: microservices
+      microservicesdb.user: root
+      microservicesdb.pass: root
+      document-storage.host: microservices-document-storage
+    ports:
+      - '8081:8081'
+      - '5005:5005'
+    networks:
+      - private-network
+    depends_on:
+      - microservices-db
+
+  microservices-db:
+    image: mysql:latest
+    restart: on-failure
+    container_name: microservices-db
+    tty: true
+    environment:
+      MYSQL_DATABASE: 'microservices'
+      MYSQL_USER: 'hm'
+      MYSQL_PASSWORD: '123456'
+      MYSQL_ROOT_PASSWORD: 'root'
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./docker-compose-data/mysql:/var/lib/mysql
+    networks:
+      - private-network
+
+  microservices-document-storage:
+    image: minio/minio:RELEASE.2021-02-01T22-56-52Z
+    restart: on-failure
+    container_name: microservices-document-storage
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data
+    ports:
+      - '9000:9000'
+    expose:
+      - '9000'
+    volumes:
+      - ./docker-compose-data/minio:/data
+    networks:
+      - private-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  microservices-db:
+    driver: local
+  microservices-document-storage:
+    driver: local
+
+networks:
+  private-network:
+    driver: bridge
